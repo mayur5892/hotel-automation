@@ -18,6 +18,13 @@
       state)
     (println "System not Configured. Please set default state")))
 
+(defn -main [no-of-floors no-of-main-corridors no-of-sub-corridor]
+  (set-default-state (Integer/parseInt no-of-floors)
+                     (Integer/parseInt no-of-main-corridors)
+                     (Integer/parseInt no-of-sub-corridor)))
+
+
+
 
 
 
