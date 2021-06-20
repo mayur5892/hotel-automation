@@ -19,3 +19,19 @@
       (is (= {:id 1 :light true :AC true} (first main-corridors)))
       (is (= {:id 1 :light false :AC true} (first sub-corridors)))
       (is (= {:id 2 :light false :AC true} (second sub-corridors))))))
+
+(deftest motion-detected-in-sub-corridor
+  (testing "should return valid state when motion is detected"
+    (let [current-state (construct-initial-state 2 1 2)
+          floor-id 1
+          sub-corridor-id 2
+          motion-event {:floor-id floor-id
+                        :sub-corridor-id sub-corridor-id
+                        :type :motion}
+          result (process-event current-state motion-event)
+          floor (first (filter #(= floor-id (:id %)) (:floors result)))
+          sub-corridor2 (first (filter #(= sub-corridor-id (:id %)) (:sub-corridors floor)))
+          sub-corridor1 (first (filter #(= 1 (:id %)) (:sub-corridors floor)))]
+
+      (is (true? (:light sub-corridor2)))
+      (is (true? (:AC sub-corridor2))))))

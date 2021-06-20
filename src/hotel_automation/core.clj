@@ -1,46 +1,28 @@
-(ns hotel-automation.core)
-
-(defn construct-main-corridors [main-corridors]
-  (for [id (range 1 (inc main-corridors))]
-    {:id id
-     :light true
-     :AC true}))
-
-(defn construct-sub-corridors [sub-corridors]
-  (for [id (range 1 (inc sub-corridors))]
-    {:id id
-     :light false
-     :AC true}))
-
-(defn construct-floor [floors main-corridors sub-corridors]
-  (for [floor-id (range 1 (inc floors))]
-    {:id floor-id
-     :main-corridors (construct-main-corridors main-corridors)
-     :sub-corridors (construct-sub-corridors sub-corridors)}))
-
-(defn- boolean->ON-OFF [bool]
-  (if bool
-    "ON" "OFF"))
-
-(defn- print-corridor [type {:keys [id light AC]}]
-  (println  (format "%s corridor %s Light %s: %s AC: %s"
-              type id id
-              (boolean->ON-OFF light)
-              (boolean->ON-OFF AC))))
-
-(defn- print-state [state]
-  (doseq [floor (:floors state)]
-    (println "Floor " (:id floor))
-
-    (doseq [main-corridor (:main-corridors floor)]
-      (print-corridor "Main" main-corridor ))
-
-    (doseq [sub-corridor (:sub-corridors floor)]
-      (print-corridor "Sub" sub-corridor))))
+(ns hotel-automation.core
+  (:require [hotel-automation.event :as event]
+            [hotel-automation.hotel :as hotel]
+            [hotel-automation.utils :as utils])
+  (:import [java.util Map List]))
 
 (defn construct-initial-state [floors main-corridor-per-floor sub-corridor-per-floor]
-  (let [default-state {:floors (construct-floor floors
+  (let [default-state {:floors (hotel/construct-floor floors
              main-corridor-per-floor
              sub-corridor-per-floor)}]
-    (print-state default-state)
+    (utils/print-state default-state)
     default-state))
+
+(defprotocol ProcessEvent
+  (process-event [state event]))
+
+(extend-protocol ProcessEvent
+  Map
+  (process-event [state event]
+    (println "inside map")
+    (event/handle-event state event))
+
+  List
+  (process-event [state events]
+    (println "inside List")
+    (reduce
+      #(event/handle-event % %2)
+      state events)))
