@@ -12,18 +12,19 @@
     default-state))
 
 (defprotocol ProcessEvent
-  (process-event [state event]))
+  (process-event [event state]))
 
 (extend-protocol ProcessEvent
   Map
-  (process-event [state event]
+  (process-event [event state]
     (let [new-state (event/handle-event state event)]
       (utils/print-state new-state)
       new-state))
 
   List
-  (process-event [state events]
-    (println "inside List")
+  (process-event [events state]
     (reduce
-      #(event/handle-event % %2)
+      #(let [new-state (event/handle-event % %2)]
+         (utils/print-state new-state)
+         new-state)
       state events)))

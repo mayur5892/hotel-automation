@@ -10,9 +10,9 @@
     (remove #(= id (:id %)))
     (cons new-state)))
 
-(defn switch-on-sub-corridor-light [sub-corridors id]
+(defn update-sub-corridor-light [sub-corridors id light]
   (let [sub-corridor (utils/find-by-id sub-corridors id)
-        new-state (assoc sub-corridor :light true)]
+        new-state (assoc sub-corridor :light light)]
     (update-state sub-corridors new-state)))
 
 
@@ -35,26 +35,42 @@
                     (#(assoc % :AC false)))]
     (update-state sub-corridors new-state)))
 
+(defn- switch-on-sub-corridor-ac [sub-corridors]
+  (let [new-state (->> sub-corridors
+                    (filter #(false? (:AC %)))
+                    first
+                    (#(assoc % :AC true)))]
+    (update-state sub-corridors new-state)))
+
 (defn- handle-over-power-consumption [state floor sub-corridor-id]
   (let [new-floor-state (update floor :sub-corridors switch-off-sub-corridor-ac sub-corridor-id)]
     (update state :floors update-state new-floor-state)))
 
+(defn handle-under-power-consumption [state floor ]
+  (let [new-floor-state (update floor :sub-corridors switch-on-sub-corridor-ac)]
+    (update state :floors update-state new-floor-state)))
+
 (defn- manage-floor-power-consumption [state floor-id sub-corridor-id]
   (let [floor (utils/find-by-id (:floors state) floor-id)
-        current-power-consumption (compute-floor-power-consumption floor)]
-    (if (<= current-power-consumption (max-power-per-floor floor))
-      state
-      (handle-over-power-consumption state floor sub-corridor-id))))
+        current-power-consumption (compute-floor-power-consumption floor)
+        max-power-per-floor (max-power-per-floor floor)]
+    (cond
+      (= current-power-consumption max-power-per-floor) state
+      (> current-power-consumption max-power-per-floor) (handle-over-power-consumption state floor sub-corridor-id)
+      (< current-power-consumption max-power-per-floor) (handle-under-power-consumption state floor))))
 
 (defmulti handle-event (fn [_ event] (:type event)))
 
 (defmethod handle-event :motion
   [current-state {:keys [floor-id sub-corridor-id]}]
   (let [floor (utils/find-by-id (:floors current-state) floor-id)
-        new-floor-state (update floor :sub-corridors switch-on-sub-corridor-light sub-corridor-id)
+        new-floor-state (update floor :sub-corridors update-sub-corridor-light sub-corridor-id true)
         updated-state (update current-state :floors update-state new-floor-state)]
     (manage-floor-power-consumption updated-state floor-id sub-corridor-id)))
 
 (defmethod handle-event :rest
-  [current-state event]
-  )
+  [current-state {:keys [floor-id sub-corridor-id]}]
+  (let [floor (utils/find-by-id (:floors current-state) floor-id)
+        new-floor-state (update floor :sub-corridors update-sub-corridor-light sub-corridor-id false)
+        updated-state (update current-state :floors update-state new-floor-state)]
+    (manage-floor-power-consumption updated-state floor-id sub-corridor-id)))
