@@ -20,3 +20,6 @@
 
     (doseq [sub-corridor (:sub-corridors floor)]
       (print-corridor "Sub" sub-corridor))))
+
+(defn find-by-id [state id]
+  (first (filter #(= id (:id %)) state)))

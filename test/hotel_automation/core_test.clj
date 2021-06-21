@@ -1,6 +1,8 @@
 (ns hotel-automation.core-test
   (:require [clojure.test :refer :all]
-            [hotel-automation.core :refer :all]))
+            [hotel-automation.core :refer :all]
+            [hotel-automation.hotel :refer :all]
+            [hotel-automation.event :refer :all]))
 
 (deftest initial-state-setup-test
   (testing "should return valid initial state"
@@ -20,7 +22,7 @@
       (is (= {:id 1 :light false :AC true} (first sub-corridors)))
       (is (= {:id 2 :light false :AC true} (second sub-corridors))))))
 
-(deftest motion-detected-in-sub-corridor
+(deftest motion-detected-in-sub-corridor-test
   (testing "should return valid state when motion is detected"
     (let [current-state (construct-initial-state 2 1 2)
           floor-id 1
@@ -34,4 +36,11 @@
           sub-corridor1 (first (filter #(= 1 (:id %)) (:sub-corridors floor)))]
 
       (is (true? (:light sub-corridor2)))
-      (is (true? (:AC sub-corridor2))))))
+      (is (true? (:AC sub-corridor2)))
+
+      (is (false? (:AC sub-corridor1))))))
+
+(deftest power-consumption-test
+  (testing "should return total power consumed by the floor"
+    (let [floor (first (construct-floor 1 1 2))]
+      (is (= 35 (compute-floor-power-consumption floor))))))

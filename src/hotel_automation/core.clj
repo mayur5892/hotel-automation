@@ -17,8 +17,9 @@
 (extend-protocol ProcessEvent
   Map
   (process-event [state event]
-    (println "inside map")
-    (event/handle-event state event))
+    (let [new-state (event/handle-event state event)]
+      (utils/print-state new-state)
+      new-state))
 
   List
   (process-event [state events]
